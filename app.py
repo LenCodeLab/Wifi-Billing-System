@@ -1,4 +1,8 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()  # <-- Make sure this is called before you use os.getenv
+
 from flask import Flask, request, jsonify
 from mpesa_stk import stk_push
 from mk_api import grant_access, revoke_access
