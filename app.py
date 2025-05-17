@@ -9,6 +9,15 @@ from mk_api import grant_access, revoke_access
 
 app = Flask(__name__)
 
+@app.route('/api/payment-callback', methods=['POST'])
+def payment_callback():
+    callback_data = request.get_json()
+    # Process the callback data as needed
+    # For example, check if payment was successful and update database
+    print("Received M-Pesa callback:", callback_data)
+    # Always send a response to M-Pesa to acknowledge receipt
+    return jsonify({"ResultCode": 0, "ResultDesc": "Accepted"}), 200
+
 @app.route('/api/subscribe', methods=['POST'])
 def subscribe():
     data = request.json
