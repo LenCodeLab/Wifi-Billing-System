@@ -4,55 +4,49 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login - FastNet Wi-Fi</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
-<script>
-  function validateVoucher() {
-    const code = document.getElementById("voucher").value.trim();
-
-    // Check if code is empty
-    if (code === "") {
-      alert("Please enter your voucher code.");
-      return false;
-    }
-
-    // Check for pattern: 6+ letters/numbers only
-    const pattern = /^[A-Za-z0-9]{6,}$/;
-    if (!pattern.test(code)) {
-      alert("Invalid code. Must be at least 6 letters or numbers (no special characters).");
-      return false;
-    }
-
-    // Simulate success
-    alert("Voucher accepted! Redirecting to dashboard...");
-    window.location.href = "dashboard.html";
-    return false; // prevent actual form submit
-  }
-</script>
-
 <body>
   <header>
     <h1>FastNet Wi-Fi</h1>
     <nav>
-      <a href="index.html">Home</a>
-      <a href="login.html">Login</a>
-      <a href="pay.html">Payment</a>
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="{{ url_for('login_page') }}">Login</a>
+      <a href="{{ url_for('pay_page') }}">Payment</a>
     </nav>
   </header>
-
   <main>
     <h2>Login with Voucher</h2>
-    <form class="login-form" onsubmit="return validateVoucher();">
-  <label for="voucher">Enter Voucher Code:</label><br>
-  <input type="text" id="voucher" name="voucher" placeholder="e.g. ABC123" required>
-  <br><br>
-  <button type="submit">Connect</button>
-</form>
-
+    <form class="login-form" onsubmit="validateVoucher(event);">
+      <label for="voucher">Enter Voucher Code:</label><br>
+      <input type="text" id="voucher" name="voucher" placeholder="e.g. ABC123" required>
+      <br><br>
+      <button type="submit">Connect</button>
+    </form>
   </main>
-
   <footer>
-    <p>© 2025 FastNet. All rights reserved.</p>
+    <p>&copy; 2025 FastNet. All rights reserved.</p>
   </footer>
+  <script>
+  async function validateVoucher(event) {
+    event.preventDefault();
+    const code = document.getElementById("voucher").value.trim();
+    if (!/^[A-Za-z0-9]{6,}$/.test(code)) {
+      alert("Invalid code. Must be at least 6 letters or numbers.");
+      return false;
+    }
+    const res = await fetch('/api/login', {
+      method: "POST",
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({voucher: code})
+    });
+    const data = await res.json();
+    if (data.success) {
+      window.location.href = "{{ url_for('dashboard_page') }}";
+    } else {
+      alert(data.message || "Login failed");
+    }
+  }
+  </script>
 </body>
 </html>
