@@ -4,18 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Payment - FastNet Wi-Fi</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
 <body>
   <header>
     <h1>FastNet Wi-Fi</h1>
     <nav>
-      <a href="index.html">Home</a>
-      <a href="login.html">Login</a>
-      <a href="pay.html">Payment</a>
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="{{ url_for('login_page') }}">Login</a>
+      <a href="{{ url_for('pay_page') }}">Payment</a>
     </nav>
   </header>
-
   <main>
     <h2>Make Payment via M-Pesa</h2>
     <p>Follow these steps to buy internet access:</p>
@@ -31,9 +30,8 @@
     </ol>
     <p>After payment, your voucher code will be sent via SMS or WhatsApp.</p>
   </main>
-
   <footer>
-    <p>© 2025 FastNet. All rights reserved.</p>
+    <p>&copy; 2025 FastNet. All rights reserved.</p>
   </footer>
 </body>
 </html>
