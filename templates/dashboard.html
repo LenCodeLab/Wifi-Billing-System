@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard - FastNet Wi-Fi</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <header>
+    <h1>FastNet Wi-Fi</h1>
+    <nav>
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="{{ url_for('login_page') }}">Login</a>
+      <a href="{{ url_for('pay_page') }}">Payment</a>
+      <a href="{{ url_for('dashboard_page') }}">Dashboard</a>
+    </nav>
+  </header>
+  <main>
+    <h2>User Dashboard</h2>
+    <div class="dashboard-box" id="dashboard-info">
+      <!-- Data will be loaded here -->
+    </div>
+    <button onclick="logout()">Logout</button>
+  </main>
+  <footer>
+    <p>&copy; 2025 FastNet. All rights reserved.</p>
+  </footer>
+  <script>
+  async function loadDashboard() {
+    const res = await fetch('/api/dashboard');
+    if (res.ok) {
+      const data = await res.json();
+      document.getElementById('dashboard-info').innerHTML = `
+        <p><strong>Username:</strong> ${data.username}</p>
+        <p><strong>Phone:</strong> ${data.phone || ''}</p>
+        <p><strong>Data Balance:</strong> ${data.data_balance}</p>
+        <p><strong>Time Remaining:</strong> ${data.time_remaining}</p>
+        <p><strong>Connection Status:</strong> ✅ ${data.status}</p>
+      `;
+    } else {
+      window.location.href = "{{ url_for('login_page') }}";
+    }
+  }
+  function logout() {
+    fetch('/api/logout').then(() => window.location.href = "{{ url_for('login_page') }}");
+  }
+  loadDashboard();
+  </script>
+</body>
+</html>
