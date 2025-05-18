@@ -5,17 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WiFi Billing System</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json">
   <style>
+    :root {
+      --bg: #f5f7fa;
+      --text: #333;
+      --card-bg: #fff;
+      --primary: #1e88e5;
+      --accent: #43a047;
+    }
+
+    body.dark {
+      --bg: #121212;
+      --text: #f5f5f5;
+      --card-bg: #1e1e1e;
+      --primary: #90caf9;
+      --accent: #66bb6a;
+    }
+
     body {
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 0 1rem;
-      background: #f5f7fa;
-      color: #333;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
     }
 
     header {
-      background-color: #1e88e5;
+      background-color: var(--primary);
       color: white;
       padding: 1rem;
       text-align: center;
@@ -27,10 +45,21 @@
       margin-right: 15px;
     }
 
-    main {
-      max-width: 600px;
-      margin: 2rem auto;
+    #dark-toggle {
+      position: absolute;
+      right: 1rem;
+      top: 1rem;
       background: white;
+      border: none;
+      padding: 0.5rem;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 2rem auto;
+      background: var(--card-bg);
       padding: 2rem;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -38,22 +67,25 @@
 
     .packages {
       display: flex;
-      flex-direction: column;
+      flex-wrap: wrap;
       gap: 1rem;
+      justify-content: center;
     }
 
     .package {
+      flex: 1 1 200px;
+      max-width: 240px;
       border: 1px solid #ccc;
       border-radius: 8px;
       padding: 1rem;
       text-align: center;
-      background: #fafafa;
+      background: var(--bg);
       transition: all 0.2s ease;
     }
 
     .package.selected {
-      border-color: #1e88e5;
-      background-color: #e3f2fd;
+      border-color: var(--primary);
+      background-color: var(--card-bg);
     }
 
     .package h3 {
@@ -61,7 +93,7 @@
     }
 
     .select-package-btn {
-      background-color: #1e88e5;
+      background-color: var(--primary);
       color: white;
       padding: 0.5rem 1rem;
       border: none;
@@ -88,7 +120,7 @@
     }
 
     #confirm-btn {
-      background-color: #43a047;
+      background-color: var(--accent);
       color: white;
       padding: 0.6rem 1.2rem;
       border: none;
@@ -123,14 +155,19 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    .mpesa-logo {
+      width: 100px;
+      margin-top: 1rem;
+    }
   </style>
 </head>
 <body>
+  <button id="dark-toggle" title="Toggle dark mode">🌓</button>
+
   <header>
     <h1>Balnix Fast Net</h1>
-    <nav>
-      <a href="index.html">Home</a>
-    </nav>
+    <nav><a href="index.html">Home</a></nav>
   </header>
 
   <main>
@@ -158,6 +195,7 @@
       <label for="phone">Enter your phone number:</label>
       <input type="text" id="phone" placeholder="e.g. 0712345678" />
       <button id="confirm-btn">Confirm and Pay</button>
+      <img src="https://upload.wikimedia.org/wikipedia/commons/4/49/M-Pesa_Logo.png" alt="M-Pesa Logo" class="mpesa-logo" />
     </div>
 
     <div id="status"></div>
@@ -169,10 +207,8 @@
     document.querySelectorAll('.select-package-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.package').forEach(pkg => pkg.classList.remove('selected'));
-
         const packageDiv = btn.closest('.package');
         packageDiv.classList.add('selected');
-
         selectedPackage = packageDiv.getAttribute('data-package');
         document.getElementById('selected-package').textContent = selectedPackage;
         document.getElementById('phone-section').style.display = 'block';
@@ -203,10 +239,7 @@
         const response = await fetch('/api/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone: phone,
-            package: selectedPackage
-          })
+          body: JSON.stringify({ phone, package: selectedPackage })
         });
 
         const data = await response.json();
@@ -226,7 +259,29 @@
         btn.innerHTML = 'Confirm and Pay';
       }
     });
+
+    // Dark mode toggle
+    document.getElementById('dark-toggle').addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    });
+
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark');
+    }
+
+    // Register service worker for offline fallback
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(() => {
+          console.log('Service Worker registered');
+        }).catch(err => {
+          console.error('Service Worker registration failed:', err);
+        });
+      });
+    }
   </script>
 </body>
 </html>
+
 
