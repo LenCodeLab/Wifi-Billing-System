@@ -5,83 +5,228 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WiFi Billing System</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0 1rem;
+      background: #f5f7fa;
+      color: #333;
+    }
+
+    header {
+      background-color: #1e88e5;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin-right: 15px;
+    }
+
+    main {
+      max-width: 600px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .packages {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .package {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      background: #fafafa;
+      transition: all 0.2s ease;
+    }
+
+    .package.selected {
+      border-color: #1e88e5;
+      background-color: #e3f2fd;
+    }
+
+    .package h3 {
+      margin: 0.5rem 0;
+    }
+
+    .select-package-btn {
+      background-color: #1e88e5;
+      color: white;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .select-package-btn:hover {
+      background-color: #1565c0;
+    }
+
+    #phone-section {
+      display: none;
+      margin-top: 2rem;
+    }
+
+    #phone {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    #confirm-btn {
+      background-color: #43a047;
+      color: white;
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #confirm-btn[disabled] {
+      background-color: #9e9e9e;
+      cursor: not-allowed;
+    }
+
+    #status {
+      margin-top: 1rem;
+      font-weight: bold;
+      min-height: 1.5rem;
+      color: #d32f2f;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
   <header>
     <h1>Balnix Fast Net</h1>
     <nav>
       <a href="index.html">Home</a>
-<!--       <a href="login.html">Login </a> -->
-<!--       <a href="pay.html">Payment</a> -->
     </nav>
   </header>
 
-<!-- ... rest of your HTML ... -->
-<main>
-  <h2>Internet Packages</h2>
-  <label for="phone">Enter your phone number:</label>
-  <input type="text" id="phone" placeholder="e.g. 0712345678" />
-  <div class="packages">
-    <div class="package" data-package="daily">
-      <h3>Daily</h3>
-      <p>1GB @ KES 20</p>
-      <button class="buy-btn">Buy Now</button>
+  <main>
+    <h2>Internet Packages</h2>
+    <div class="packages">
+      <div class="package" data-package="daily">
+        <h3>Daily</h3>
+        <p>1GB @ KES 20</p>
+        <button class="select-package-btn">Select</button>
+      </div>
+      <div class="package" data-package="weekly">
+        <h3>Weekly</h3>
+        <p>5GB @ KES 80</p>
+        <button class="select-package-btn">Select</button>
+      </div>
+      <div class="package" data-package="monthly">
+        <h3>Monthly</h3>
+        <p>20GB @ KES 300</p>
+        <button class="select-package-btn">Select</button>
+      </div>
     </div>
-    <div class="package" data-package="weekly">
-      <h3>Weekly</h3>
-      <p>5GB @ KES 80</p>
-      <button class="buy-btn">Buy Now</button>
+
+    <div id="phone-section">
+      <h3>Selected Package: <span id="selected-package"></span></h3>
+      <label for="phone">Enter your phone number:</label>
+      <input type="text" id="phone" placeholder="e.g. 0712345678" />
+      <button id="confirm-btn">Confirm and Pay</button>
     </div>
-    <div class="package" data-package="monthly">
-      <h3>Monthly</h3>
-      <p>20GB @ KES 300</p>
-      <button class="buy-btn">Buy Now</button>
-    </div>
-  </div>
-  <div id="status"></div>
-</main>
-  <script>document.querySelectorAll('.buy-btn').forEach(btn => {
-  btn.addEventListener('click', async function(e) {
-    const packageDiv = btn.closest('.package');
-    const packageType = packageDiv.getAttribute('data-package');
-    const phone = document.getElementById('phone').value.trim();
-    const statusDiv = document.getElementById('status');
-    statusDiv.textContent = '';
 
-    if (!phone.match(/^07\d{8}$/)) {
-      statusDiv.textContent = 'Please enter a valid Kenyan phone number (e.g., 0712345678)';
-      return;
-    }
+    <div id="status"></div>
+  </main>
 
-    // Optionally, you may want to auto-detect MAC (advanced, usually passed from backend)
-    // For now, just send phone and package type
-    btn.disabled = true;
-    btn.textContent = 'Processing...';
+  <script>
+    let selectedPackage = null;
 
-    try {
-      const response = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: phone,
-          package: packageType
-          // Add mac_address if available
-        })
+    document.querySelectorAll('.select-package-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.package').forEach(pkg => pkg.classList.remove('selected'));
+
+        const packageDiv = btn.closest('.package');
+        packageDiv.classList.add('selected');
+
+        selectedPackage = packageDiv.getAttribute('data-package');
+        document.getElementById('selected-package').textContent = selectedPackage;
+        document.getElementById('phone-section').style.display = 'block';
+        document.getElementById('status').textContent = '';
       });
+    });
 
-      const data = await response.json();
-      if (data.success) {
-        statusDiv.textContent = 
-          'STK Push sent to your phone. Complete payment to activate your internet package.';
-      } else {
-        statusDiv.textContent = data.message || 'Sorry, something went wrong.';
+    document.getElementById('confirm-btn').addEventListener('click', async () => {
+      const phone = document.getElementById('phone').value.trim();
+      const statusDiv = document.getElementById('status');
+      statusDiv.textContent = '';
+
+      if (!selectedPackage) {
+        statusDiv.textContent = 'Please select a package first.';
+        return;
       }
-    } catch (err) {
-      statusDiv.textContent = 'Network error. Please try again.';
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Buy Now';
-    }
-  });
-});</script>
-<!-- ... rest of your HTML ... -->
+
+      if (!phone.match(/^07\d{8}$/)) {
+        statusDiv.textContent = 'Please enter a valid Kenyan phone number (e.g., 0712345678)';
+        return;
+      }
+
+      const btn = document.getElementById('confirm-btn');
+      btn.disabled = true;
+      btn.innerHTML = 'Processing <span class="spinner"></span>';
+
+      try {
+        const response = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: phone,
+            package: selectedPackage
+          })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          statusDiv.style.color = '#388e3c';
+          statusDiv.textContent =
+            'STK Push sent to your phone. Complete payment to activate your internet package.';
+        } else {
+          statusDiv.style.color = '#d32f2f';
+          statusDiv.textContent = data.message || 'Sorry, something went wrong.';
+        }
+      } catch (err) {
+        statusDiv.style.color = '#d32f2f';
+        statusDiv.textContent = 'Network error. Please try again.';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Confirm and Pay';
+      }
+    });
+  </script>
+</body>
+</html>
+
