@@ -1,37 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Payment - FastNet Wi-Fi</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <meta charset="UTF-8">
+    <title>Wi-Fi Payment</title>
 </head>
 <body>
-  <header>
-    <h1>FastNet Wi-Fi</h1>
-    <nav>
-      <a href="{{ url_for('home') }}">Home</a>
-      <a href="{{ url_for('login_page') }}">Login</a>
-      <a href="{{ url_for('pay_page') }}">Payment</a>
-    </nav>
-  </header>
-  <main>
-    <h2>Make Payment via M-Pesa</h2>
-    <p>Follow these steps to buy internet access:</p>
-    <ol style="text-align:left; max-width: 400px; margin: 0 auto;">
-      <li>Open M-Pesa on your phone</li>
-      <li>Go to <strong>Lipa na M-Pesa</strong></li>
-      <li>Select <strong>Paybill</strong></li>
-      <li>Enter Business Number: <strong>0705979289</strong></li>
-      <li>Enter Account Number: <strong>Your Name or Phone</strong></li>
-      <li>Enter the amount (e.g. KES 20)</li>
-      <li>Enter your M-Pesa PIN</li>
-      <li>Confirm and send</li>
-    </ol>
-    <p>After payment, your voucher code will be sent via SMS or WhatsApp.</p>
-  </main>
-  <footer>
-    <p>&copy; 2025 FastNet. All rights reserved.</p>
-  </footer>
+    <h2>Buy Wi-Fi Package</h2>
+    <form id="payment-form">
+        <label>Phone Number:</label>
+        <input type="text" id="phone" placeholder="e.g. 254708374149" required>
+        <br>
+        <label>Select Package:</label>
+        <select id="package">
+            <option value="2 Hours"> - 10 KES</option>
+            <option value="12 Hours"> - 20 KES</option>
+            <option value="daily">24 Hours - 30 KES</option>
+            <option value="weekly">Weekly - 80 KES</option>
+            <option value="monthly">Monthly - 600 KES</option>
+        </select>
+        <br><br>
+        <button type="submit">Pay Now</button>
+    </form>
+
+    <div id="response"></div>
+
+    <script>
+        document.getElementById("payment-form").addEventListener("submit", function (e) {
+            e.preventDefault();
+            const phone = document.getElementById("phone").value;
+            const package = document.getElementById("package").value;
+
+            fetch("/api/subscribe", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone, package })
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById("response").innerText = data.message || JSON.stringify(data);
+            })
+            .catch(err => {
+                document.getElementById("response").innerText = "Error: " + err;
+            });
+        });
+    </script>
+</body>
+</html>
 </body>
 </html>
