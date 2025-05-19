@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, login_required, logout_user, UserMixin, current_user
 from models import db, Voucher
 from mpesa_stk import initiate_stk_push
+import random, string
 
 load_dotenv()
 
@@ -72,7 +73,6 @@ def logout():
 @app.route('/api/dashboard')
 @login_required
 def dashboard_data():
-    # TODO: Replace with real usage/balance from backend or database
     return jsonify({
         "username": current_user.code,
         "phone": current_user.phone,
@@ -89,16 +89,57 @@ def subscribe():
     amount = {"daily": 20, "weekly": 80, "monthly": 300}.get(package)
     if not phone or not amount:
         return jsonify(success=False, message="Invalid input"), 400
+    # Save pending payment info (optional: to verify in callback)
+    session['pending_payment'] = {'phone': phone, 'package': package, 'amount': amount}
     mpesa_resp = initiate_stk_push(phone, amount, "WiFi", f"{package} package")
-    # TODO: Insert logic to generate and send voucher upon payment confirmation
     return jsonify(success=True, message="STK Push sent", mpesa=mpesa_resp)
 
 @app.route('/api/payment-callback', methods=['POST'])
 def payment_callback():
     callback_data = request.get_json()
     print("Received M-Pesa callback:", callback_data)
-    # TODO: Parse callback, verify payment success, generate and deliver voucher, update DB
-    return jsonify({"ResultCode": 0, "ResultDesc": "Accepted"}), 200
+
+    # Parse result code and metadata
+    try:
+        body = callback_data['Body']['stkCallback']
+        result_code = body['ResultCode']
+        if result_code != 0:
+            # Payment failed
+            return jsonify({"ResultCode": 0, "ResultDesc": "Accepted"}), 200
+
+        # Extract details
+        meta = {item['Name']: item['Value'] for item in body['CallbackMetadata']['Item']}
+        phone = str(meta.get('PhoneNumber'))
+        amount = int(meta.get('Amount'))
+
+        # Determine the package bought (if saving pending payments, match here)
+        # Example: match amount to package
+        if amount ==10:
+            package = '2 Hours'
+        elif amount == 20:
+            package = '24 Hours'
+        elif amount == 80:
+            package = 'weekly'
+        elif amount == 600:
+            package = 'monthly'
+        else:
+            package = 'unknown'
+        if package == 'unknown':
+            return jsonify({"ResultCode": 0, "ResultDesc": "Invalid Amount"}), 200
+
+        # Generate and save voucher
+        code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        voucher = Voucher(code=code, used=False, phone=phone)
+        db.session.add(voucher)
+        db.session.commit()
+
+        # TODO: Send voucher via SMS (integrate with SMS gateway)
+        print(f"Send SMS to {phone}: Your Wi-Fi voucher code is {code}")
+
+        return jsonify({"ResultCode": 0, "ResultDesc": "Accepted"}), 200
+    except Exception as e:
+        print("Error processing callback:", e)
+        return jsonify({"ResultCode": 0, "ResultDesc": "Error"}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
