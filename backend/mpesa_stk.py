@@ -1,49 +1,63 @@
 import os
 import base64
 import requests
-from datetime import datetime
 from dotenv import load_dotenv
+from datetime import datetime
 
-load_dotenv()
+load_dotenv()  # Load env variables
 
-# === Utilities ===
+# Load M-Pesa credentials from environment
+MPESA_CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY")
+MPESA_CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET")
+MPESA_SHORTCODE = os.getenv("MPESA_SHORTCODE")
+MPESA_PASSKEY = os.getenv("MPESA_PASSKEY")
+MPESA_ENV = os.getenv("MPESA_ENV", "sandbox")
+
+# Define endpoints based on environment
+if MPESA_ENV == "production":
+    BASE_URL = "https://api.safaricom.co.ke"
+else:
+    BASE_URL = "https://sandbox.safaricom.co.ke"
 
 def get_access_token():
-    url = f"{os.getenv('MPESA_BASE_URL')}/oauth/v1/generate?grant_type=client_credentials"
-    response = requests.get(url, auth=(os.getenv('MPESA_CONSUMER_KEY'), os.getenv('MPESA_CONSUMER_SECRET')))
-    return response.json().get('access_token')
+    credentials = f"{MPESA_CONSUMER_KEY}:{MPESA_CONSUMER_SECRET}"
+    encoded_credentials = base64.b64encode(credentials.encode()).decode()
 
+    headers = {
+        "Authorization": f"Basic {encoded_credentials}"
+    }
 
-def initiate_stk_push(phone, amount, account_ref, transaction_desc):
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    passkey = os.getenv('MPESA_PASSKEY')
-    shortcode = os.getenv('MPESA_SHORTCODE')
+    response = requests.get(f"{BASE_URL}/oauth/v1/generate?grant_type=client_credentials", headers=headers)
+    response.raise_for_status()
+    return response.json()['access_token']
 
-    password = base64.b64encode(f"{shortcode}{passkey}{timestamp}".encode()).decode()
-
+def initiate_stk_push(phone, amount, account_reference, transaction_desc):
     access_token = get_access_token()
+
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    password = base64.b64encode(f"{MPESA_SHORTCODE}{MPESA_PASSKEY}{timestamp}".encode()).decode()
+
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
 
     payload = {
-        "BusinessShortCode": shortcode,
+        "BusinessShortCode": MPESA_SHORTCODE,
         "Password": password,
         "Timestamp": timestamp,
         "TransactionType": "CustomerPayBillOnline",
         "Amount": amount,
         "PartyA": phone,
-        "PartyB": shortcode,
+        "PartyB": MPESA_SHORTCODE,
         "PhoneNumber": phone,
-        "CallBackURL": os.getenv('MPESA_CALLBACK_URL'),
-        "AccountReference": account_ref,
+        "CallBackURL": "https://yourdomain.com/api/payment-callback",
+        "AccountReference": account_reference,
         "TransactionDesc": transaction_desc
     }
 
-    url = f"{os.getenv('MPESA_BASE_URL')}/mpesa/stkpush/v1/processrequest"
-    response = requests.post(url, json=payload, headers=headers)
-
+    response = requests.post(f"{BASE_URL}/mpesa/stkpush/v1/processrequest", json=payload, headers=headers)
     return response.json()
+
 
 
